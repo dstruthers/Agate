@@ -89,3 +89,5 @@ fromList = foldr Pair Null
 
 isTrue (Boolean False) = False
 isTrue _               = True
+
+isFalse = not . isTrue
