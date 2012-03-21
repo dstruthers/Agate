@@ -7,8 +7,6 @@ import Control.Monad.Error
 import Control.Monad.State
 import System.IO
 
-vm = initialVM
-
 eval :: VM -> Op -> ThrowsError (SchemeValue, VM)
 eval vm op = case runState (exec op) vm of
   (Right result, vm') -> return (result, vm')
@@ -17,7 +15,7 @@ eval vm op = case runState (exec op) vm of
 repl :: VM -> IO ()
 repl vm = do
   input <- prompt "agate> "
-  case (parse input) >>= (flip compile) Exit >>= (eval vm) of
+  case (parse input) >>= compile >>= (eval vm) of
     Right (result, vm') -> putStrLn (show result) >> repl vm'
     Left error -> putStrLn ("*** " ++ show error) >> repl vm
 
