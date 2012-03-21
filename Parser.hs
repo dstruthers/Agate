@@ -38,7 +38,14 @@ parseList = do
   char ')'
   return $ fromList contents
   
-parseAnyExpr = try parseList <|> try parseNumber
+parseQuote = do
+  char '\''
+  expr <- parseAnyExpr
+  return $ Pair (Symbol "quote") (Pair expr Null)
+
+parseAnyExpr = try parseList
+               <|> try parseQuote
+               <|> try parseNumber
                <|> try parseString
                <|> try parseBoolean
                <|> try parseSymbol

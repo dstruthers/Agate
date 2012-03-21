@@ -22,4 +22,8 @@ compile (Pair (Symbol "if") (Pair test (Pair conseq (Pair altern Null)))) next =
       Right alternComp -> compile test (Test conseqComp alternComp)
       Left error -> throwError error
     Left error -> throwError error   
+
+compile (Pair (Symbol "quote") (Pair form Null)) next =
+  return $ Constant form next
+
 compile badValue _ = throwError $ CompileError badValue
