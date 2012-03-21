@@ -4,6 +4,11 @@ import Control.Monad.State
 import Types
 
 exec :: Op -> VMState (ThrowsError SchemeValue)
+exec (Assign name next) = do
+  vm <- get
+  put vm { environment = envInsert name (accumulator vm) (environment vm) }
+  exec next
+  
 exec (Constant k next) = do
   vm <- get
   put vm { accumulator = k }

@@ -42,7 +42,8 @@ instance Error SchemeError where
 
 type ThrowsError = Either SchemeError
 
-data Op = Constant SchemeValue Op
+data Op = Assign String Op
+        | Constant SchemeValue Op
         | Lookup String Op
         | Test Op Op
         | Exit
