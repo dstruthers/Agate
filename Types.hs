@@ -1,5 +1,6 @@
 module Types where
 import Control.Monad.Error
+import Data.Map as Map
 
 data SchemeValue = Symbol  String
                 | String  String
@@ -18,15 +19,18 @@ instance Show SchemeValue where
     where showPair x (Pair y1 y2) = show x ++ " " ++ showPair y1 y2
           showPair x Null = show x
           showPair x y = show x ++ " . " ++ show y
-          
 
 data SchemeError = ParseError String
                  | TypeError String SchemeValue
+                 | CompileError SchemeValue
+                 | RuntimeError Op
                  | GenericError String
                           
 instance Show SchemeError where
   show (ParseError s) = "**ParseError: " ++ s
   show (TypeError s v) = "**TypeError: expected " ++ s ++ ", got " ++ show v
+  show (CompileError v) = "**CompilationError: cannot compile " ++ show v
+  show (RuntimeError o) = "**RuntimeError: cannot execute " ++ show o
   show (GenericError s) = "**Error: " ++ s
 
 instance Error SchemeError where
@@ -34,6 +38,21 @@ instance Error SchemeError where
   strMsg = GenericError
 
 type ThrowsError = Either SchemeError
+
+data Op = Constant SchemeValue Op
+        | Lookup String Op
+        | Exit
+        deriving (Show)
+
+data VM = VM
+          { accumulator :: SchemeValue
+          , environment :: Env
+          }
+        deriving (Show)
+
+type Env = Map.Map String SchemeValue
+
+initialVM = VM Null Map.empty
 
 typeof :: SchemeValue -> String
 typeof (Symbol _) = "symbol"

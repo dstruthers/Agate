@@ -1,4 +1,6 @@
-module Parser where
+module Parser
+       ( Parser.parse
+       ) where
 import Control.Monad.Error (throwError)
 import Text.ParserCombinators.Parsec
 import Types
