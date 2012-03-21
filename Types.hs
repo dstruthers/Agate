@@ -1,5 +1,6 @@
 module Types where
 import Control.Monad.Error
+import Control.Monad.State
 import Data.Map as Map
 
 data SchemeValue = Symbol  String
@@ -23,15 +24,17 @@ instance Show SchemeValue where
 data SchemeError = ParseError String
                  | TypeError String SchemeValue
                  | CompileError SchemeValue
+                 | ReferenceError String
                  | RuntimeError Op
                  | GenericError String
                           
 instance Show SchemeError where
-  show (ParseError s) = "**ParseError: " ++ s
-  show (TypeError s v) = "**TypeError: expected " ++ s ++ ", got " ++ show v
-  show (CompileError v) = "**CompilationError: cannot compile " ++ show v
-  show (RuntimeError o) = "**RuntimeError: cannot execute " ++ show o
-  show (GenericError s) = "**Error: " ++ s
+  show (ParseError s) = "ParseError: " ++ s
+  show (TypeError s v) = "TypeError: expected " ++ s ++ ", got " ++ show v
+  show (CompileError v) = "CompilationError: cannot compile " ++ show v
+  show (ReferenceError v) = "ReferenceError: unbound symbol " ++ v
+  show (RuntimeError o) = "RuntimeError: cannot execute " ++ show o
+  show (GenericError s) = "Error: " ++ s
 
 instance Error SchemeError where
   noMsg  = GenericError "an error occurred"
@@ -41,6 +44,7 @@ type ThrowsError = Either SchemeError
 
 data Op = Constant SchemeValue Op
         | Lookup String Op
+        | Test Op Op
         | Exit
         deriving (Show)
 
@@ -51,8 +55,15 @@ data VM = VM
         deriving (Show)
 
 type Env = Map.Map String SchemeValue
+type VMState a = State VM a
 
 initialVM = VM Null Map.empty
+
+envLookup :: String -> Env -> Maybe SchemeValue
+envLookup = Map.lookup
+
+envInsert :: String -> SchemeValue -> Env -> Env
+envInsert = Map.insert
 
 typeof :: SchemeValue -> String
 typeof (Symbol _) = "symbol"
@@ -74,3 +85,6 @@ cons = Pair
 
 fromList :: [SchemeValue] -> SchemeValue
 fromList = foldr Pair Null
+
+isTrue (Boolean False) = False
+isTrue _               = True
