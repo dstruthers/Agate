@@ -3,6 +3,7 @@ import Types
 import Parser
 import Compiler
 import VM
+import Primitives
 import Control.Monad.Error
 import Control.Monad.State
 import System.IO
