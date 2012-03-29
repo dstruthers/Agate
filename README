@@ -2,7 +2,8 @@ Agate
 By Darren M. Struthers <dstruthers@gmail.com>
 
 OVERVIEW
-This is a basic Scheme implementation, written in Haskell.
+This is a very basic Lisp dialect incorporating features from the Scheme and
+Kernel programming languages.
 
 LICENSING
 This is free software licensed under the terms of the X11 license. See LICENSE
