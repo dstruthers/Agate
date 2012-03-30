@@ -3,6 +3,7 @@ module Parser
        ) where
 import Control.Monad.Error (throwError)
 import Text.ParserCombinators.Parsec
+
 import Types
 
 parseNumber = do
@@ -29,11 +30,12 @@ parseBoolean = do
   return $ if value == 't' then Boolean True else Boolean False
 
 parseSymbol = do
-  name <- many (letter <|> digit <|> oneOf "+-*/_\\=!@#$%^&{}")
+  name <- many (letter <|> digit <|> oneOf "+-*/_\\=!@#$%^&{}?")
   return $ Symbol name
 
 parseList = do
   char '('
+  optional spaces
   contents <- parseAnyExpr `sepEndBy` (many1 space)
   char ')'
   return $ fromList contents

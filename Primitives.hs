@@ -1,7 +1,8 @@
 module Primitives (initialVM) where
-import Types
 import Control.Monad.Error
 import Data.Monoid
+
+import Types
 
 initialVM = VM Null env [] Nothing
   where env = foldr (\(k, v) e -> envInsert k v e) mempty bindings
@@ -9,8 +10,37 @@ initialVM = VM Null env [] Nothing
                    ,("-", PrimitiveApplicative (numericBinOp (-) 0))
                    ,("*", PrimitiveApplicative (numericBinOp (*) 1))
                    ,("/", PrimitiveApplicative (numericBinOp (/) 1))
-                   ,("eval", PrimitiveApplicative eval)
+                   ,("car", PrimitiveApplicative (primOp car))
+                   ,("cdr", PrimitiveApplicative (primOp cdr))
+                   ,("cons", PrimitiveApplicative (primOp2 cons))
+                   ,("boolean?", PrimitiveApplicative (primOp $ return . Boolean .isBoolean))
+                   ,("environment?", PrimitiveApplicative (primOp $ return . Boolean . isEnvironment))
+                   ,("null?", PrimitiveApplicative (primOp $ return . Boolean . isNull))
+                   ,("number?", PrimitiveApplicative (primOp $ return . Boolean . isNumber))
+                   ,("pair?", PrimitiveApplicative (primOp $ return . Boolean . isPair))
                    ]
+
+assert :: Bool -> SchemeError -> ThrowsError ()
+assert True _ = return ()
+assert False err = throwError err
+
+assertArgCount :: Int -> VM -> ThrowsError ()
+assertArgCount n vm = do
+  let args = arguments vm
+      argCount = length args
+  assert (argCount == n) (ArgCountError n argCount)
+
+primOp :: (SchemeValue -> ThrowsError SchemeValue) -> VM -> ThrowsError SchemeValue
+primOp f vm = do
+  assertArgCount 1 vm
+  let args = arguments vm
+  f (head args)
+
+primOp2 :: (SchemeValue -> SchemeValue -> ThrowsError SchemeValue) -> VM -> ThrowsError SchemeValue
+primOp2 f vm = do
+  assertArgCount 2 vm
+  let args = arguments vm
+  f (args !! 0) (args !! 1)
 
 unpackNum :: SchemeValue -> ThrowsError Double
 unpackNum (Number n) = return n
@@ -20,10 +50,6 @@ numericBinOp :: (Double -> Double -> Double) -> Double -> VM -> ThrowsError Sche
 numericBinOp f id vm = do
   args <- mapM unpackNum (arguments vm)
   return . Number $ foldr f id args
-
-assert :: Bool -> SchemeError -> ThrowsError ()
-assert True _ = return ()
-assert False err = throwError err
 
 eval vm = do
   let args = arguments vm

@@ -2,6 +2,7 @@ module VM where
 import Control.Monad.Error (throwError)
 import Control.Monad.State
 import Data.Monoid
+
 import Compiler
 import Types
 

@@ -33,6 +33,7 @@ data SchemeError = ParseError String
                  | CompileError SchemeValue
                  | ReferenceError String
                  | RuntimeError Op
+                 | ArgCountError Int Int
                  | GenericError String
                           
 instance Show SchemeError where
@@ -40,6 +41,7 @@ instance Show SchemeError where
   show (TypeError s v) = "TypeError: expected " ++ s ++ ", got " ++ show v
   show (CompileError v) = "CompilationError: cannot compile " ++ show v
   show (ReferenceError v) = "ReferenceError: unbound symbol " ++ v
+  show (ArgCountError e r) = "ArgCountError: expected " ++ show e ++ " argument" ++ if e == 1 then "" else "s" ++ ", got " ++ show r
   show (RuntimeError o) = "RuntimeError: cannot execute " ++ show o
   show (GenericError s) = "Error: " ++ s
 
@@ -134,7 +136,11 @@ cdr :: SchemeValue -> ThrowsError SchemeValue
 cdr (Pair _ y) = return y
 cdr badValue   = throwError $ TypeError "pair" badValue
 
-cons = Pair
+cons :: SchemeValue -> SchemeValue -> ThrowsError SchemeValue
+cons x y = return $ Pair x y
+
+isNull Null = True
+isNull _ = False
 
 fromList :: [SchemeValue] -> SchemeValue
 fromList = foldr Pair Null

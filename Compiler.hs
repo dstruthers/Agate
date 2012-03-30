@@ -1,5 +1,6 @@
 module Compiler (compile, compile') where
 import Control.Monad.Error (throwError)
+
 import Types
 
 compile :: SchemeValue -> ThrowsError Op

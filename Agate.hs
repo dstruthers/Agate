@@ -1,12 +1,13 @@
 module Main where
-import Types
-import Parser
-import Compiler
-import VM
-import Primitives
 import Control.Monad.Error
 import Control.Monad.State
 import System.IO
+
+import Compiler
+import Parser
+import Primitives
+import Types
+import VM
 
 eval :: VM -> Op -> ThrowsError (SchemeValue, VM)
 eval vm op = case runState (exec op) vm of
