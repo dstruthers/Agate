@@ -2,10 +2,15 @@ module Primitives (initialVM) where
 import Control.Monad.Error
 import Data.Monoid
 
+import Compiler
+import Parser
 import Types
+import VM
 
-initialVM = VM Null env [] Nothing
-  where env = foldr (\(k, v) e -> envInsert k v e) mempty bindings
+initialVM :: ThrowsError VM
+initialVM = foldM compileEval vm defs
+  where vm = VM Null env [] Nothing
+        env = foldr (\(k, v) e -> envInsert k v e) mempty bindings
         bindings = [("+", PrimitiveApplicative (numericBinOp (+) 0))
                    ,("-", PrimitiveApplicative (numericBinOp (-) 0))
                    ,("*", PrimitiveApplicative (numericBinOp (*) 1))
@@ -19,6 +24,8 @@ initialVM = VM Null env [] Nothing
                    ,("number?", PrimitiveApplicative (primOp $ return . Boolean . isNumber))
                    ,("pair?", PrimitiveApplicative (primOp $ return . Boolean . isPair))
                    ]
+        compileEval vm code = parse code >>= compile >>= eval vm >>= return . snd
+        defs = []
 
 assert :: Bool -> LispError -> ThrowsError ()
 assert True _ = return ()
@@ -50,9 +57,3 @@ numericBinOp :: (Double -> Double -> Double) -> Double -> VM -> ThrowsError Lisp
 numericBinOp f id vm = do
   args <- mapM unpackNum (arguments vm)
   return . Number $ foldr f id args
-
-eval vm = do
-  let args = arguments vm
-      env = if length args > 1 then args !! 1 else Environment $ environment vm
-  assert (isEnvironment env) (TypeError "environment" env)
-  return (Symbol "foo")

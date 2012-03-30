@@ -9,11 +9,6 @@ import Primitives
 import Types
 import VM
 
-eval :: VM -> Op -> ThrowsError (LispValue, VM)
-eval vm op = case runState (exec op) vm of
-  (Right result, vm') -> return (result, vm')
-  (Left error, vm') -> throwError error
-
 repl :: VM -> IO ()
 repl vm = do
   input <- prompt "agate> "
@@ -23,4 +18,6 @@ repl vm = do
 
 prompt p = putStr p >> hFlush stdout >> getLine
 
-main = repl initialVM
+main = case initialVM of
+  Right vm -> repl vm
+  Left err -> putStrLn (show err)

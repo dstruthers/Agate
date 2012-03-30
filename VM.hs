@@ -6,6 +6,11 @@ import Data.Monoid
 import Compiler
 import Types
 
+eval :: VM -> Op -> ThrowsError (LispValue, VM)
+eval vm op = case runState (exec op) vm of
+  (Right result, vm') -> return (result, vm')
+  (Left error, vm') -> throwError error
+
 exec' :: Op -> VMState (ThrowsError LispValue)
 exec' op = return $ Right (String (show op))
 
