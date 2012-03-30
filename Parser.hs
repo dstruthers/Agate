@@ -59,7 +59,7 @@ parseExpr = do
   eof
   return expr
 
-parse :: String -> ThrowsError SchemeValue
-parse input = case Text.ParserCombinators.Parsec.parse parseExpr "scheme" input of
+parse :: String -> ThrowsError LispValue
+parse input = case Text.ParserCombinators.Parsec.parse parseExpr "lisp" input of
   Right result -> return $ result
   Left error -> throwError . ParseError . show $ error

@@ -4,17 +4,17 @@ import Control.Monad.State
 import Data.Map as Map hiding (toList)
 import Data.Monoid
 
-data SchemeValue = Symbol  String
-                 | String  String
-                 | Number  Double
-                 | Boolean Bool
-                 | Pair    SchemeValue SchemeValue
-                 | Null
-                 | Environment Env
-                 | Operative SchemeValue String Op
-                 | PrimitiveApplicative (VM -> ThrowsError SchemeValue)
+data LispValue = Symbol  String
+               | String  String
+               | Number  Double
+               | Boolean Bool
+               | Pair    LispValue LispValue
+               | Null
+               | Environment Env
+               | Operative LispValue String Op
+               | PrimitiveApplicative (VM -> ThrowsError LispValue)
             
-instance Show SchemeValue where
+instance Show LispValue where
   show (Symbol s) = s
   show (String s) = show s
   show (Number n) = show n
@@ -28,15 +28,15 @@ instance Show SchemeValue where
   show (Operative _ _ _) = "#<compound operative>"
   show (PrimitiveApplicative _) = "#<primitive applicative>"
 
-data SchemeError = ParseError String
-                 | TypeError String SchemeValue
-                 | CompileError SchemeValue
-                 | ReferenceError String
-                 | RuntimeError Op
-                 | ArgCountError Int Int
-                 | GenericError String
+data LispError = ParseError String
+               | TypeError String LispValue
+               | CompileError LispValue
+               | ReferenceError String
+               | RuntimeError Op
+               | ArgCountError Int Int
+               | GenericError String
                           
-instance Show SchemeError where
+instance Show LispError where
   show (ParseError s) = "ParseError: " ++ s
   show (TypeError s v) = "TypeError: expected " ++ s ++ ", got " ++ show v
   show (CompileError v) = "CompilationError: cannot compile " ++ show v
@@ -45,23 +45,23 @@ instance Show SchemeError where
   show (RuntimeError o) = "RuntimeError: cannot execute " ++ show o
   show (GenericError s) = "Error: " ++ s
 
-instance Error SchemeError where
+instance Error LispError where
   noMsg  = GenericError "an error occurred"
   strMsg = GenericError
 
-type ThrowsError = Either SchemeError
+type ThrowsError = Either LispError
 
 data Op = Assign String Op
-        | Constant SchemeValue Op
+        | Constant LispValue Op
         | Lookup String Op
         | Test Op Op
         | Exit
         | Eval Op Op
         | PushArg Op
         | Frame Op Op
-        | Apply (VM -> ThrowsError SchemeValue) Op
+        | Apply (VM -> ThrowsError LispValue) Op
         | Return
-        | Combine SchemeValue Op
+        | Combine LispValue Op
           
 instance Show Op where
   show (Assign s o) = "Assign " ++ show s ++ " >>> " ++ show o
@@ -77,16 +77,16 @@ instance Show Op where
   show (Combine s o) = "Combine " ++ show s ++ " >>> " ++ show o
 
 data VM = VM
-          { accumulator :: SchemeValue
+          { accumulator :: LispValue
           , environment :: Env
-          , arguments   :: [SchemeValue]
+          , arguments   :: [LispValue]
           , stack       :: Maybe (VM, Op)
           }
         deriving (Show)
 
 newtype Env = Env
               {
-                unEnv :: Map.Map String SchemeValue
+                unEnv :: Map.Map String LispValue
               }
             deriving (Show)
 
@@ -96,13 +96,13 @@ instance Monoid Env where
 
 type VMState a = State VM a
 
-envLookup :: String -> Env -> Maybe SchemeValue
+envLookup :: String -> Env -> Maybe LispValue
 envLookup s = (Map.lookup s) . unEnv
 
-envInsert :: String -> SchemeValue -> Env -> Env
+envInsert :: String -> LispValue -> Env -> Env
 envInsert s v = Env . (Map.insert s v) . unEnv
 
-typeof :: SchemeValue -> String
+typeof :: LispValue -> String
 typeof (Symbol _) = "symbol"
 typeof (String _) = "string"
 typeof (Number _) = "number"
@@ -128,24 +128,24 @@ isPair _ = False
 isEnvironment (Environment _) = True
 isEnvironment _ = False
 
-car :: SchemeValue -> ThrowsError SchemeValue
+car :: LispValue -> ThrowsError LispValue
 car (Pair x _) = return x
 car badValue   = throwError $ TypeError "pair" badValue
 
-cdr :: SchemeValue -> ThrowsError SchemeValue
+cdr :: LispValue -> ThrowsError LispValue
 cdr (Pair _ y) = return y
 cdr badValue   = throwError $ TypeError "pair" badValue
 
-cons :: SchemeValue -> SchemeValue -> ThrowsError SchemeValue
+cons :: LispValue -> LispValue -> ThrowsError LispValue
 cons x y = return $ Pair x y
 
 isNull Null = True
 isNull _ = False
 
-fromList :: [SchemeValue] -> SchemeValue
+fromList :: [LispValue] -> LispValue
 fromList = foldr Pair Null
 
-toList :: SchemeValue -> [SchemeValue]
+toList :: LispValue -> [LispValue]
 toList Null = []
 toList (Pair x xs) = x : toList xs
 

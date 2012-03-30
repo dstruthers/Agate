@@ -9,7 +9,7 @@ import Primitives
 import Types
 import VM
 
-eval :: VM -> Op -> ThrowsError (SchemeValue, VM)
+eval :: VM -> Op -> ThrowsError (LispValue, VM)
 eval vm op = case runState (exec op) vm of
   (Right result, vm') -> return (result, vm')
   (Left error, vm') -> throwError error

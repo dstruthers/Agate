@@ -3,12 +3,12 @@ import Control.Monad.Error (throwError)
 
 import Types
 
-compile :: SchemeValue -> ThrowsError Op
+compile :: LispValue -> ThrowsError Op
 compile = (flip comp) Exit
 
 compile' = comp
 
-comp :: SchemeValue -> Op -> ThrowsError Op
+comp :: LispValue -> Op -> ThrowsError Op
 comp (Symbol name) next = return $ Lookup name next
 -- Literals
 comp s@(String _) next = return $ Constant s next
@@ -50,6 +50,6 @@ comp (Pair combiner args) next =
 
 comp badValue _ = throwError $ CompileError badValue
 
-validParamList :: SchemeValue -> Bool
+validParamList :: LispValue -> Bool
 validParamList (Symbol _) = True
 validParamList x = isProperList x

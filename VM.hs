@@ -6,10 +6,10 @@ import Data.Monoid
 import Compiler
 import Types
 
-exec' :: Op -> VMState (ThrowsError SchemeValue)
+exec' :: Op -> VMState (ThrowsError LispValue)
 exec' op = return $ Right (String (show op))
 
-exec :: Op -> VMState (ThrowsError SchemeValue)
+exec :: Op -> VMState (ThrowsError LispValue)
 exec (Assign name next) = do
   vm <- get
   put vm { environment = envInsert name (accumulator vm) (environment vm) }
@@ -79,13 +79,13 @@ exec (Apply f next) = do
 
 exec badValue = return . throwError . RuntimeError $ badValue
 
-application :: [SchemeValue] -> Op -> ThrowsError Op
+application :: [LispValue] -> Op -> ThrowsError Op
 application [] n = return n
 application (a:as) n = do
   next <- application as n
   compile' a (PushArg next)
 
-execOperative :: SchemeValue -> String -> Op -> SchemeValue -> Op -> VMState (ThrowsError SchemeValue)
+execOperative :: LispValue -> String -> Op -> LispValue -> Op -> VMState (ThrowsError LispValue)
 execOperative params envVar body args next = do
   vm <- get
   let env = environment vm
@@ -100,7 +100,7 @@ execOperative params envVar body args next = do
         envBuilder (Symbol p, a) e = envInsert p a e
         argPairs = zip (toList params) (toList args)
 
-execApplicative :: (VM -> ThrowsError SchemeValue) -> Op -> VMState (ThrowsError SchemeValue)
+execApplicative :: (VM -> ThrowsError LispValue) -> Op -> VMState (ThrowsError LispValue)
 execApplicative f next = do
   vm <- get
   case (f vm) of

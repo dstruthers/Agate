@@ -20,7 +20,7 @@ initialVM = VM Null env [] Nothing
                    ,("pair?", PrimitiveApplicative (primOp $ return . Boolean . isPair))
                    ]
 
-assert :: Bool -> SchemeError -> ThrowsError ()
+assert :: Bool -> LispError -> ThrowsError ()
 assert True _ = return ()
 assert False err = throwError err
 
@@ -30,23 +30,23 @@ assertArgCount n vm = do
       argCount = length args
   assert (argCount == n) (ArgCountError n argCount)
 
-primOp :: (SchemeValue -> ThrowsError SchemeValue) -> VM -> ThrowsError SchemeValue
+primOp :: (LispValue -> ThrowsError LispValue) -> VM -> ThrowsError LispValue
 primOp f vm = do
   assertArgCount 1 vm
   let args = arguments vm
   f (head args)
 
-primOp2 :: (SchemeValue -> SchemeValue -> ThrowsError SchemeValue) -> VM -> ThrowsError SchemeValue
+primOp2 :: (LispValue -> LispValue -> ThrowsError LispValue) -> VM -> ThrowsError LispValue
 primOp2 f vm = do
   assertArgCount 2 vm
   let args = arguments vm
   f (args !! 0) (args !! 1)
 
-unpackNum :: SchemeValue -> ThrowsError Double
+unpackNum :: LispValue -> ThrowsError Double
 unpackNum (Number n) = return n
 unpackNum badValue = throwError $ TypeError "number" badValue
 
-numericBinOp :: (Double -> Double -> Double) -> Double -> VM -> ThrowsError SchemeValue
+numericBinOp :: (Double -> Double -> Double) -> Double -> VM -> ThrowsError LispValue
 numericBinOp f id vm = do
   args <- mapM unpackNum (arguments vm)
   return . Number $ foldr f id args
