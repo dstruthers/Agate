@@ -23,6 +23,8 @@ initialVM = foldM compileEval vm defs
                    ,("null?", PrimitiveApplicative (primOp $ return . Boolean . isNull))
                    ,("number?", PrimitiveApplicative (primOp $ return . Boolean . isNumber))
                    ,("pair?", PrimitiveApplicative (primOp $ return . Boolean . isPair))
+                   ,("list", PrimitiveApplicative list)
+                   ,("if", PrimitiveOperative ifOp)
                    ]
         compileEval vm code = parse code >>= compile >>= eval vm >>= return . snd
         defs = []
@@ -31,11 +33,14 @@ assert :: Bool -> LispError -> ThrowsError ()
 assert True _ = return ()
 assert False err = throwError err
 
-assertArgCount :: Int -> VM -> ThrowsError ()
-assertArgCount n vm = do
+assertArgComparison f n vm = do
   let args = arguments vm
       argCount = length args
-  assert (argCount == n) (ArgCountError n argCount)
+  assert (argCount `f` n) (ArgCountError n argCount)
+
+assertArgCount = assertArgComparison (==)
+assertMinArgCount = assertArgComparison (>=)
+assertMaxArgCount = assertArgComparison (<=)
 
 primOp :: (LispValue -> ThrowsError LispValue) -> VM -> ThrowsError LispValue
 primOp f vm = do
@@ -57,3 +62,23 @@ numericBinOp :: (Double -> Double -> Double) -> Double -> VM -> ThrowsError Lisp
 numericBinOp f id vm = do
   args <- mapM unpackNum (arguments vm)
   return . Number $ foldr f id args
+
+list :: VM -> ThrowsError LispValue
+list vm = let argCount = length (arguments vm)
+          in if argCount > 0
+             then return . fromList . arguments $ vm
+             else throwError $ ArgCountError 1 argCount
+
+ifOp :: VM -> ThrowsError LispValue
+ifOp vm = do
+  assertMinArgCount 2 vm
+  assertMaxArgCount 3 vm
+  
+  compiled <- compile . head . arguments $ vm
+  result <- eval vm compiled
+  let args = arguments vm
+  if isTrue (fst result)
+    then compile (args !! 1) >>= eval vm >>= return . fst
+    else if length args > 2
+         then compile (args !! 2) >>= eval vm >>= return . fst
+         else return Null

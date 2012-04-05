@@ -67,25 +67,18 @@ exec (Combine args next) = do
   vm <- get
   case accumulator vm of
     Operative a e b -> execOperative a e b args next
-    PrimitiveApplicative f -> do
-      case next of
-        Return -> case application (toList args) (Apply f next) of
-          Right compiled -> exec compiled
-          Left err -> return . throwError $ err
-        
-        _ -> case application (toList args) (Apply f Return) of
-          Right compiled -> exec (Frame next compiled)
-          Left err -> return . throwError $ err
-    badValue -> return . throwError . TypeError "operative" $ badValue
+    PrimitiveOperative f -> execPrimitiveOperative f args next
+    PrimitiveApplicative f -> execPrimitiveApplicative f args next
+    badValue -> return . throwError . TypeError "operative or applicative" $ badValue
 
 exec (PushArg next) = do
   vm <- get
   put vm { arguments = (arguments vm) ++ [accumulator vm] }
   exec next
 
-exec (Apply f next) = do
+exec (Invoke f next) = do
   vm <- get
-  execApplicative f next
+  execCombiner f next
 
 exec badValue = return . throwError . RuntimeError $ badValue
 
@@ -94,6 +87,12 @@ application [] n = return n
 application (a:as) n = do
   next <- application as n
   compile' a (PushArg next)
+  
+operation :: [LispValue] -> Op -> ThrowsError Op
+operation [] n = return n
+operation (a:as) n = do
+  next <- operation as n
+  return $ Constant a (PushArg next)
 
 execOperative :: LispValue -> String -> Op -> LispValue -> Op -> VMState (ThrowsError LispValue)
 execOperative params envVar body args next = do
@@ -110,9 +109,30 @@ execOperative params envVar body args next = do
         envBuilder (Symbol p, a) e = envInsert p a e
         argPairs = zip (toList params) (toList args)
 
-execApplicative :: (VM -> ThrowsError LispValue) -> Op -> VMState (ThrowsError LispValue)
-execApplicative f next = do
+execCombiner :: (VM -> ThrowsError LispValue) -> Op -> VMState (ThrowsError LispValue)
+execCombiner f next = do
   vm <- get
   case (f vm) of
     Right result -> put vm { accumulator = result, arguments = [] } >> exec next
     Left err -> return . throwError $ err
+
+execPrimitiveApplicative :: (VM -> ThrowsError LispValue) -> LispValue -> Op -> VMState (ThrowsError LispValue)
+execPrimitiveApplicative = optimizeCombiner application
+
+execPrimitiveOperative :: (VM -> ThrowsError LispValue) -> LispValue -> Op -> VMState (ThrowsError LispValue)
+execPrimitiveOperative = optimizeCombiner operation
+
+optimizeCombiner :: ([LispValue] -> Op -> ThrowsError Op) 
+                    -> (VM -> ThrowsError LispValue)
+                    -> LispValue
+                    -> Op
+                    -> VMState (ThrowsError LispValue)
+optimizeCombiner mode f args next = do
+  case next of
+    Return -> case mode (toList args) (Invoke f next) of
+      Right compiled -> exec compiled
+      Left err -> return . throwError $ err
+      
+    _ -> case mode (toList args) (Invoke f Return) of
+      Right compiled -> exec (Frame next compiled)
+      Left err -> return . throwError $ err

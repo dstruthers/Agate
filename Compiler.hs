@@ -30,18 +30,6 @@ comp (Pair (Symbol "vau") (Pair a (Pair (Symbol e) (Pair b Null)))) next = do
     then return $ Constant (Operative a e body) next
     else throwError $ GenericError "invalid argument list"
 
--- TODO: refactor into monadic version
-comp (Pair (Symbol "if") (Pair test (Pair conseq Null))) next =
-  case comp conseq next of
-    Right conseqComp -> comp test (Test conseqComp (Constant Null Exit))
-    Left error -> throwError error
-comp (Pair (Symbol "if") (Pair test (Pair conseq (Pair altern Null)))) next =
-  case comp conseq next of
-    Right conseqComp -> case comp altern next of
-      Right alternComp -> comp test (Test conseqComp alternComp)
-      Left error -> throwError error
-    Left error -> throwError error   
-
 comp (Pair (Symbol "quote") (Pair form Null)) next =
   return $ Constant form next
 

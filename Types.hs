@@ -13,6 +13,7 @@ data LispValue = Symbol  String
                | Environment Env
                | Operative LispValue String Op
                | PrimitiveApplicative (VM -> ThrowsError LispValue)
+               | PrimitiveOperative (VM -> ThrowsError LispValue)
             
 instance Show LispValue where
   show (Symbol s) = s
@@ -27,6 +28,7 @@ instance Show LispValue where
   show (Environment _) = "#<environment>"
   show (Operative _ _ _) = "#<compound operative>"
   show (PrimitiveApplicative _) = "#<primitive applicative>"
+  show (PrimitiveOperative _) = "#<primitive operative>"
 
 data LispError = ParseError String
                | TypeError String LispValue
@@ -59,7 +61,7 @@ data Op = Assign String Op
         | Eval Op Op
         | PushArg Op
         | Frame Op Op
-        | Apply (VM -> ThrowsError LispValue) Op
+        | Invoke (VM -> ThrowsError LispValue) Op
         | Return
         | Combine LispValue Op
           
@@ -72,7 +74,7 @@ instance Show Op where
   show (Eval o n) = "Eval (" ++ show o ++ ") >>> " ++ show n
   show (PushArg o) = "PushArg >>> " ++ show o
   show (Frame r n) = "Frame (ret = " ++ show r ++ ") >>> " ++ show n
-  show (Apply _ o) = "Apply >>> " ++ show o
+  show (Invoke _ o) = "Invoke >>> " ++ show o
   show Return = "Return"
   show (Combine s o) = "Combine " ++ show s ++ " >>> " ++ show o
 
