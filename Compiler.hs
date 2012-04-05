@@ -19,11 +19,7 @@ comp e@(Environment _) next = return $ Constant e next
 -- Special Forms
 comp (Pair (Symbol "define") (Pair (Symbol name) (Pair value Null))) next =
   comp value (Assign name next)
-{-comp (Pair (Symbol "eval") (Pair form (Pair e Null))) next =
-  comp form Return >>= \c -> comp e (Eval c next)
-comp (Pair (Symbol "eval") (Pair form Null)) next =
-  comp form next
--}
+
 comp (Pair (Symbol "vau") (Pair a (Pair (Symbol e) (Pair b Null)))) next = do
   body <- comp b Return
   if validParamList a
