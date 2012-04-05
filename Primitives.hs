@@ -18,7 +18,7 @@ initialVM = foldM compileEval vm defs
                    ,("car", PrimitiveApplicative (primOp car))
                    ,("cdr", PrimitiveApplicative (primOp cdr))
                    ,("cons", PrimitiveApplicative (primOp2 cons))
-                   ,("boolean?", PrimitiveApplicative (primOp $ return . Boolean .isBoolean))
+                   ,("boolean?", PrimitiveApplicative (primOp $ return . Boolean . isBoolean))
                    ,("environment?", PrimitiveApplicative (primOp $ return . Boolean . isEnvironment))
                    ,("null?", PrimitiveApplicative (primOp $ return . Boolean . isNull))
                    ,("number?", PrimitiveApplicative (primOp $ return . Boolean . isNumber))

@@ -68,9 +68,14 @@ exec (Combine args next) = do
   case accumulator vm of
     Operative a e b -> execOperative a e b args next
     PrimitiveApplicative f -> do
-      case application (toList args) (Apply f Return) of
-        Right compiled -> exec (Frame next compiled)
-        Left err -> return . throwError $ err
+      case next of
+        Return -> case application (toList args) (Apply f next) of
+          Right compiled -> exec compiled
+          Left err -> return . throwError $ err
+        
+        _ -> case application (toList args) (Apply f Return) of
+          Right compiled -> exec (Frame next compiled)
+          Left err -> return . throwError $ err
     badValue -> return . throwError . TypeError "operative" $ badValue
 
 exec (PushArg next) = do
